@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SILENCIO — Digital Products</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Three.js r168 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- GSAP + ScrollTrigger -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
+
+<style>
+  /* ─── FONTS ─────────────────────────────────────────────── */
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,500;0,700;0,800;0,900;1,700;1,900&family=Barlow:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --white: #f5f4f0;
+    --black: #0a0a0a;
+    --pink:  #e8b4c8;
+    --silver:#c8c8c8;
+    --accent:#ff3c00;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: auto; }
+
+  body {
+    background: var(--white);
+    color: var(--black);
+    font-family: 'Barlow Condensed', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* ─── CUSTOM CURSOR ──────────────────────────────────────── */
+  #cursor {
+    position: fixed; width: 14px; height: 14px;
+    background: var(--black); border-radius: 50%;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%,-50%);
+    transition: width .2s, height .2s, background .2s;
+    mix-blend-mode: difference;
+  }
+  #cursor.hover { width: 44px; height: 44px; }
+
+  /* ─── SCROLL BAR ─────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--white); }
+  ::-webkit-scrollbar-thumb { background: var(--black); }
+
+  /* ─── NAV ────────────────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; width: 100%;
+    z-index: 100; mix-blend-mode: difference;
+    padding: 1.4rem 2.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  nav a { color: var(--white); text-decoration: none; font-size: .75rem; letter-spacing: .18em; font-weight: 500; }
+  .nav-logo { font-size: 1.05rem; font-weight: 900; letter-spacing: .3em; }
+
+  /* ─── VERTICAL EDGE TEXT ─────────────────────────────────── */
+  .edge-text {
+    position: fixed; left: 1.2rem; top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    transform-origin: center center;
+    font-size: .6rem; letter-spacing: .28em; font-weight: 700;
+    white-space: nowrap; color: var(--black);
+    opacity: .35; z-index: 50; pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+  .edge-text-right {
+    left: auto; right: 1.2rem;
+    transform: translateY(-50%) rotate(90deg);
+  }
+
+  /* ─── SECTIONS ───────────────────────────────────────────── */
+  section { position: relative; overflow: hidden; }
+
+  /* ─── HERO ───────────────────────────────────────────────── */
+  #hero {
+    height: 100vh; min-height: 640px;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    background: var(--white);
+  }
+  #hero-canvas {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .hero-headline {
+    position: relative; z-index: 2;
+    text-align: center;
+    font-size: clamp(1.5rem, 5vw, 4.2rem);
+    font-weight: 900; line-height: .95;
+    letter-spacing: -.01em;
+    text-transform: uppercase;
+    max-width: 860px; padding: 0 1.5rem;
+    pointer-events: none;
+  }
+  .hero-headline em { font-style: italic; color: #888; }
+  .hero-sub {
+    position: relative; z-index: 2;
+    font-family: 'Space Mono', monospace;
+    font-size: .65rem; letter-spacing: .25em;
+    margin-top: 2.4rem; opacity: .5;
+    text-transform: uppercase;
+  }
+  .hero-badge {
+    position: absolute; bottom: 2.5rem; right: 2.5rem; z-index: 2;
+    width: 84px; height: 84px;
+    border: 1.5px solid var(--black); border-radius: 50%;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    font-size: .5rem; font-weight: 700; letter-spacing: .15em;
+    text-transform: uppercase; text-align: center;
+    animation: spin 18s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .scroll-hint {
+    position: absolute; bottom: 2.5rem; left: 50%;
+    transform: translateX(-50%); z-index: 2;
+    font-size: .6rem; letter-spacing: .22em; opacity: .4;
+    display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  }
+  .scroll-hint::after {
+    content: ''; display: block; width: 1px; height: 48px;
+    background: var(--black); animation: scrollLine 1.6s ease-in-out infinite;
+  }
+  @keyframes scrollLine { 0%,100%{opacity:.2;transform:scaleY(0);transform-origin:top;} 50%{opacity:1;transform:scaleY(1);} }
+
+  /* ─── STUDIO INTRO ───────────────────────────────────────── */
+  #intro {
+    min-height: 100vh; background: var(--black);
+    display: flex; align-items: center;
+    padding: 8rem 2.5rem;
+  }
+  .intro-inner { max-width: 1200px; margin: 0 auto; width: 100%; }
+  .intro-label {
+    font-size: .65rem; letter-spacing: .3em; color: #555;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 3rem; text-transform: uppercase;
+  }
+  .intro-headline {
+    font-size: clamp(2.4rem, 6vw, 6.5rem);
+    font-weight: 900; line-height: .92; letter-spacing: -.02em;
+    text-transform: uppercase; color: var(--white);
+  }
+  .intro-headline .outline {
+    -webkit-text-stroke: 1.5px var(--white);
+    color: transparent;
+  }
+  .intro-bottom {
+    margin-top: 5rem; display: flex;
+    justify-content: space-between; align-items: flex-end;
+    flex-wrap: wrap; gap: 2rem;
+  }
+  .intro-services {
+    display: flex; gap: 2.5rem; flex-wrap: wrap;
+  }
+  .intro-services span {
+    font-size: .65rem; letter-spacing: .2em;
+    color: #555; text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+  }
+  .intro-year {
+    font-size: 8rem; font-weight: 900;
+    color: #1a1a1a; line-height: 1; letter-spacing: -.05em;
+  }
+
+  /* ─── CATALOG ────────────────────────────────────────────── */
+  #catalog { background: var(--white); padding: 6rem 0; }
+  .catalog-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding: 0 2.5rem 4rem;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 2rem;
+  }
+  .catalog-title {
+    font-size: clamp(3rem, 8vw, 8rem);
+    font-weight: 900; line-height: .88;
+    text-transform: uppercase; letter-spacing: -.03em;
+  }
+  .catalog-meta {
+    font-family: 'Space Mono', monospace;
+    font-size: .65rem; letter-spacing: .15em;
+    color: #888; text-align: right; line-height: 1.8;
+  }
+
+  /* Product card */
+  .product-card {
+    display: grid; grid-template-columns: 1fr 1fr;
+    min-height: 90vh; border-bottom: 1px solid #ddd;
+    overflow: hidden;
+  }
+  .product-card:nth-child(even) { direction: rtl; }
+  .product-card:nth-child(even) > * { direction: ltr; }
+
+  .product-stage {
+    position: relative; background: var(--white);
+    display: flex; justify-content: center; align-items: center;
+    overflow: hidden; min-height: 480px;
+  }
+  .product-stage canvas {
+    width: 100% !important; height: 100% !important;
+    position: absolute; inset: 0;
+  }
+  .product-stage.dark { background: #111; }
+  .product-stage.pink  { background: #f7e8f0; }
+  .product-stage.silver{ background: #e8e8e8; }
+
+  .product-info {
+    padding: 4rem 3rem;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    border-left: 1px solid #ddd;
+  }
+  .product-card:nth-child(even) .product-info {
+    border-left: none; border-right: 1px solid #ddd;
+  }
+
+  .product-number {
+    font-family: 'Space Mono', monospace;
+    font-size: .65rem; letter-spacing: .25em; color: #aaa;
+  }
+  .product-name {
+    font-size: clamp(2.8rem, 5vw, 5.5rem);
+    font-weight: 900; line-height: .88;
+    text-transform: uppercase; letter-spacing: -.02em;
+    margin: 1.5rem 0;
+  }
+  .product-edition {
+    font-family: 'Space Mono', monospace;
+    font-size: .6rem; letter-spacing: .2em; color: #888;
+    border: 1px solid #ddd; display: inline-block;
+    padding: .3rem .7rem; margin-bottom: 2rem;
+  }
+  .product-tagline {
+    font-size: 1.1rem; font-weight: 300; line-height: 1.5;
+    color: #555; max-width: 320px;
+    font-family: 'Barlow', sans-serif;
+  }
+
+  /* Nutrition panel */
+  .nutrition-panel {
+    border: 1.5px solid var(--black);
+    padding: 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: .55rem; letter-spacing: .08em;
+  }
+  .nutrition-panel h4 {
+    font-size: 1.1rem; font-weight: 700;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: .05em; border-bottom: 6px solid var(--black);
+    padding-bottom: .3rem; margin-bottom: .3rem;
+  }
+  .nutrition-panel h5 {
+    font-size: .8rem; border-bottom: 3px solid var(--black);
+    padding-bottom: .2rem; margin-bottom: .4rem;
+    font-family: 'Barlow Condensed', sans-serif; letter-spacing: .05em;
+  }
+  .nutrition-row {
+    display: flex; justify-content: space-between;
+    border-bottom: .5px solid #ccc; padding: .18rem 0;
+  }
+  .nutrition-row.bold { font-weight: 700; }
+  .nutrition-row.sub  { padding-left: 1rem; }
+  .barcode {
+    margin-top: 1rem;
+    display: flex; gap: 1px; height: 32px; align-items: flex-end;
+  }
+  .barcode-bar {
+    background: var(--black);
+    height: 100%;
+  }
+  .barcode-num {
+    font-family: 'Space Mono', monospace;
+    font-size: .45rem; letter-spacing: .05em;
+    margin-top: .3rem;
+  }
+
+  /* Ingredients */
+  .ingredients {
+    font-family: 'Space Mono', monospace;
+    font-size: .52rem; letter-spacing: .06em;
+    color: #666; line-height: 1.7;
+    border-top: 1px solid #ddd;
+    padding-top: 1rem; margin-top: 1rem;
+  }
+
+  /* ─── DARK SECTION ───────────────────────────────────────── */
+  #dark-section {
+    background: var(--black); min-height: 100vh;
+    padding: 8rem 2.5rem; color: var(--white);
+  }
+  .dark-headline {
+    font-size: clamp(3rem, 9vw, 9.5rem);
+    font-weight: 900; line-height: .88;
+    text-transform: uppercase; letter-spacing: -.03em;
+    max-width: 900px;
+  }
+  .dark-headline .stroke {
+    -webkit-text-stroke: 1.5px var(--white);
+    color: transparent;
+  }
+  .grid-moody {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: .8rem; margin-top: 5rem;
+  }
+  .moody-cell {
+    aspect-ratio: 3/4; background: #1a1a1a;
+    overflow: hidden; position: relative;
+    display: flex; align-items: flex-end; padding: 1rem;
+  }
+  .moody-cell-inner {
+    width: 100%; height: 100%;
+    position: absolute; inset: 0;
+    display: flex; justify-content: center; align-items: center;
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    font-weight: 900; color: #222; text-transform: uppercase;
+    letter-spacing: -.02em;
+  }
+  .moody-label {
+    font-family: 'Space Mono', monospace;
+    font-size: .55rem; letter-spacing: .2em;
+    color: #555; text-transform: uppercase;
+    position: relative; z-index: 1;
+  }
+
+  /* ─── MANIFESTO TICKER ───────────────────────────────────── */
+  .ticker-wrap {
+    overflow: hidden; background: var(--black);
+    border-top: 1px solid #222; border-bottom: 1px solid #222;
+    padding: 1rem 0;
+  }
+  .ticker-track {
+    display: flex; width: max-content;
+    animation: ticker 20s linear infinite;
+  }
+  .ticker-track span {
+    font-size: clamp(1rem,2.5vw,1.6rem); font-weight: 900;
+    text-transform: uppercase; color: var(--white);
+    padding: 0 2.5rem; letter-spacing: .08em;
+    white-space: nowrap;
+  }
+  .ticker-track span.dot {
+    color: var(--accent); padding: 0;
+  }
+  @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+  /* ─── CTA / FINAL ────────────────────────────────────────── */
+  #cta {
+    min-height: 100vh; background: var(--white);
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 8rem 2.5rem; text-align: center;
+    position: relative;
+  }
+  #basket-canvas {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .cta-thanks {
+    font-size: clamp(3rem, 10vw, 10rem);
+    font-weight: 900; line-height: .85;
+    text-transform: uppercase; letter-spacing: -.03em;
+    position: relative; z-index: 2;
+  }
+  .cta-sub {
+    font-size: clamp(1.5rem, 4vw, 4rem);
+    font-weight: 900; text-transform: uppercase;
+    color: #bbb; letter-spacing: -.02em;
+    position: relative; z-index: 2; margin-top: 1rem;
+  }
+  .cta-btn {
+    margin-top: 3.5rem; position: relative; z-index: 2;
+    display: inline-block; padding: 1.1rem 3.5rem;
+    border: 2px solid var(--black); font-size: .8rem;
+    font-weight: 700; letter-spacing: .3em;
+    text-transform: uppercase; text-decoration: none;
+    color: var(--black); font-family: 'Space Mono', monospace;
+    transition: background .25s, color .25s;
+  }
+  .cta-btn:hover { background: var(--black); color: var(--white); }
+
+  .cta-email {
+    margin-top: 1.5rem; position: relative; z-index: 2;
+    font-family: 'Space Mono', monospace;
+    font-size: .65rem; letter-spacing: .2em; color: #aaa;
+  }
+
+  /* ─── FOOTER ─────────────────────────────────────────────── */
+  footer {
+    background: var(--black); color: var(--white);
+    padding: 2.5rem; display: flex;
+    justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: .55rem; letter-spacing: .18em;
+  }
+
+  /* ─── PAGE TRANSITION ────────────────────────────────────── */
+  #page-cover {
+    position: fixed; inset: 0; background: var(--black);
+    z-index: 500; pointer-events: none;
+    transform-origin: top;
+  }
+
+  /* ─── RESPONSIVE ─────────────────────────────────────────── */
+  @media(max-width:768px){
+    .product-card { grid-template-columns: 1fr; }
+    .product-card:nth-child(even) { direction: ltr; }
+    .product-info { border-left: none; border-top: 1px solid #ddd; }
+    .product-card:nth-child(even) .product-info { border-right: none; border-top: 1px solid #ddd; }
+    .grid-moody { grid-template-columns: repeat(2,1fr); }
+    .catalog-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    .intro-year { font-size: 5rem; }
+    nav { padding: 1rem 1.5rem; }
+  }
+  @media(max-width:480px){
+    .grid-moody { grid-template-columns: 1fr; }
+  }
+
+  /* ─── UTILS ──────────────────────────────────────────────── */
+  .overflow-clip { overflow: hidden; }
+  .reveal { opacity: 0; transform: translateY(40px); }
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div id="cursor"></div>
+
+<!-- Page cover (entry animation) -->
+<div id="page-cover"></div>
+
+<!-- Vertical edge labels -->
+<div class="edge-text">AUTHENTIC · CONSUME RESPONSIBLY · NO RETURN POLICY · HARD WORK WARRANTY</div>
+<div class="edge-text edge-text-right">DIGITAL GOODS · EST. MMXXIII · SILENCIO STUDIO · MADE WITH INTENTION</div>
+
+<!-- ─── NAV ──────────────────────────────────────────────────────── -->
+<nav>
+  <a href="#" class="nav-logo">SILENCIO</a>
+  <div style="display:flex;gap:2.5rem">
+    <a href="#catalog">Shop</a>
+    <a href="#intro">Studio</a>
+    <a href="#cta">Contact</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 1 · HERO                                              -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+
+  <div class="hero-headline reveal">
+    Digital Products<br/>
+    for <em>Contemporary</em><br/>
+    &amp; Daring Brands
+  </div>
+  <p class="hero-sub reveal">Est. MMXXIII &nbsp;·&nbsp; Studio Silencio &nbsp;·&nbsp; Digital Goods</p>
+
+  <div class="hero-badge">
+    <span>LIMITED<br/>EDITION<br/>★</span>
+  </div>
+
+  <div class="scroll-hint">SCROLL</div>
+
+  <!-- Supermarket aisle labels -->
+  <div style="position:absolute;left:2.5rem;top:50%;transform:translateY(-50%);z-index:2;">
+    <div style="font-size:.55rem;letter-spacing:.3em;color:#bbb;text-transform:uppercase;line-height:2.5;font-family:'Space Mono',monospace">
+      <div>AISLE 01</div>
+      <div>DIGITAL</div>
+      <div>GOODS</div>
+      <div>────</div>
+      <div>PREMIUM</div>
+      <div>GRADE</div>
+    </div>
+  </div>
+  <div style="position:absolute;right:2.5rem;top:50%;transform:translateY(-50%);z-index:2;text-align:right">
+    <div style="font-size:.55rem;letter-spacing:.3em;color:#bbb;text-transform:uppercase;line-height:2.5;font-family:'Space Mono',monospace">
+      <div>UNIT</div>
+      <div>PRICE</div>
+      <div>∞</div>
+      <div>────</div>
+      <div>NO</div>
+      <div>REFUND</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 2 · STUDIO INTRO                                      -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="intro">
+  <div class="intro-inner">
+    <p class="intro-label">About the Studio — 00</p>
+    <h2 class="intro-headline">
+      <div class="overflow-clip"><span class="reveal">SILENCIO IS A</span></div>
+      <div class="overflow-clip"><span class="reveal"><span class="outline">DESIGN STUDIO</span></span></div>
+      <div class="overflow-clip"><span class="reveal">FOCUSED ON DIGITAL</span></div>
+      <div class="overflow-clip"><span class="reveal">VISUAL LANGUAGES</span></div>
+      <div class="overflow-clip"><span class="reveal">FOR DARING BRANDS</span></div>
+      <div class="overflow-clip"><span class="reveal"><span class="outline">OUTSIDE THE NORM.</span></span></div>
+    </h2>
+    <div class="intro-bottom">
+      <div class="intro-services">
+        <span>Brand Identity</span>
+        <span>Web Design</span>
+        <span>Motion</span>
+        <span>3D</span>
+        <span>Art Direction</span>
+      </div>
+      <div class="intro-year" style="color:#1a1a1a">2023</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 3 · CATALOG                                           -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="catalog">
+  <div class="catalog-header">
+    <h2 class="catalog-title reveal">PRODUCT<br/>CATALOG</h2>
+    <div class="catalog-meta">
+      SEASON 01 / 2023–2024<br/>
+      LIMITED STOCK AVAILABLE<br/>
+      WHILE SUPPLIES LAST
+    </div>
+  </div>
+
+  <!-- ── PRODUCT 01 · BEVERAGE CAN ── -->
+  <div class="product-card" id="card-01">
+    <div class="product-stage dark">
+      <canvas id="canvas-01"></canvas>
+    </div>
+    <div class="product-info">
+      <div>
+        <p class="product-number">PRODUCT — #01 / 04</p>
+        <h3 class="product-name">VISION<br/>CRAFT™</h3>
+        <span class="product-edition">LIMITED EDITION — 001/500</span>
+        <p class="product-tagline">
+          A concentrated blend of perspective, restraint,
+          and visual precision. Best consumed cold.
+        </p>
+      </div>
+
+      <div>
+        <div class="nutrition-panel">
+          <h4>Creative Facts</h4>
+          <p style="font-size:.5rem;margin-bottom:.3rem">Serving size: 1 project (∞g)</p>
+          <h5>Amount Per Concept</h5>
+          <div class="nutrition-row bold"><span>Total Vision</span><span>100%</span></div>
+          <div class="nutrition-row sub"><span>Originality</span><span>88g</span></div>
+          <div class="nutrition-row sub"><span>Restraint</span><span>72g</span></div>
+          <div class="nutrition-row bold"><span>Craftsmanship</span><span>∞%</span></div>
+          <div class="nutrition-row"><span>Ego</span><span>0g</span></div>
+          <div class="nutrition-row"><span>Filler</span><span>0g</span></div>
+          <div class="nutrition-row bold"><span>Attitude</span><span>Very High</span></div>
+        </div>
+
+        <div class="ingredients">
+          INGREDIENTS: PURE CONCEPT, SWISS GRID SYSTEM, HELVETICA NEUE (CONDENSED), RAW AMBITION, COLD BREW RESTRAINT, FILTERED SILENCE, OBSESSIVE KERNING, TRACED VECTOR ART, PANTONE 000 C, DISTILLED MINIMALISM. CONTAINS: HIGH STANDARDS. MAY CAUSE: DISCOMFORT IN MEDIOCRE ENVIRONMENTS.
+        </div>
+
+        <div class="barcode" id="bc-01"></div>
+        <div class="barcode-num">8 31200 03784 1 &nbsp;·&nbsp; SILENCIO-01-VC</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PRODUCT 02 · POUCH ── -->
+  <div class="product-card" id="card-02">
+    <div class="product-stage pink">
+      <canvas id="canvas-02"></canvas>
+    </div>
+    <div class="product-info">
+      <div>
+        <p class="product-number">PRODUCT — #02 / 04</p>
+        <h3 class="product-name">TENDER<br/>BRUTAL™</h3>
+        <span class="product-edition">LIMITED EDITION — 002/500</span>
+        <p class="product-tagline">
+          A pink-gradient pouch of contradictions.
+          Soft on the outside, uncompromising within.
+        </p>
+      </div>
+
+      <div>
+        <div class="nutrition-panel">
+          <h4>Creative Facts</h4>
+          <p style="font-size:.5rem;margin-bottom:.3rem">Serving size: 1 campaign (∞g)</p>
+          <h5>Amount Per Feeling</h5>
+          <div class="nutrition-row bold"><span>Total Emotion</span><span>100%</span></div>
+          <div class="nutrition-row sub"><span>Tenderness</span><span>44g</span></div>
+          <div class="nutrition-row sub"><span>Brutality</span><span>56g</span></div>
+          <div class="nutrition-row bold"><span>Color Theory</span><span>Mastered</span></div>
+          <div class="nutrition-row"><span>Compromise</span><span>0g</span></div>
+          <div class="nutrition-row"><span>Safe Choices</span><span>0g</span></div>
+          <div class="nutrition-row bold"><span>Pink</span><span>Unapologetically</span></div>
+        </div>
+
+        <div class="ingredients">
+          INGREDIENTS: GRADIENT MESH, PANTONE PINK C, FEMININE ENERGY (RECLAIMED), EDITORIAL TENSION, GLOSSY LAMINATE, SOFT-TOUCH MATTE, RAW HEAT SEAL, DECONSTRUCTED SERIF, ARCHIVAL PROCESS PINK, COURAGE. ALLERGEN: CONTAINS OPINIONS. NOT SUITABLE FOR: BEIGE BRANDS.
+        </div>
+
+        <div class="barcode" id="bc-02"></div>
+        <div class="barcode-num">8 31200 03784 2 &nbsp;·&nbsp; SILENCIO-02-TB</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PRODUCT 03 · METALLIC TUBE ── -->
+  <div class="product-card" id="card-03">
+    <div class="product-stage" style="background:#0d0d0d">
+      <canvas id="canvas-03"></canvas>
+    </div>
+    <div class="product-info">
+      <div>
+        <p class="product-number">PRODUCT — #03 / 04</p>
+        <h3 class="product-name">DENSE<br/>SIGNAL™</h3>
+        <span class="product-edition">LIMITED EDITION — 003/500</span>
+        <p class="product-tagline">
+          Concentrated metallic excellence. Apply liberally
+          to brand touchpoints. Do not dilute.
+        </p>
+      </div>
+
+      <div>
+        <div class="nutrition-panel">
+          <h4>Creative Facts</h4>
+          <p style="font-size:.5rem;margin-bottom:.3rem">Serving size: 1 touchpoint (∞g)</p>
+          <h5>Amount Per Application</h5>
+          <div class="nutrition-row bold"><span>Total Signal</span><span>100%</span></div>
+          <div class="nutrition-row sub"><span>Clarity</span><span>91g</span></div>
+          <div class="nutrition-row sub"><span>Noise</span><span>0g</span></div>
+          <div class="nutrition-row bold"><span>Metal Content</span><span>Pure</span></div>
+          <div class="nutrition-row"><span>Decoration</span><span>0g</span></div>
+          <div class="nutrition-row"><span>Nostalgia</span><span>Trace</span></div>
+          <div class="nutrition-row bold"><span>Density</span><span>Maximum</span></div>
+        </div>
+
+        <div class="ingredients">
+          INGREDIENTS: COLD-ROLLED ALUMINUM CONCEPT, HOT FOIL STAMP, DIE-CUT IDENTITY, UV SPOT VARNISH, EMBOSSED TYPESETTING, SILVER PANTONE 877 C, INDUSTRIAL PRECISION, STRUCTURAL INTEGRITY, ZERO ORNAMENTATION. WARNING: EXTREMELY CONCENTRATED. MAY OVERWHELM GENERIC COMPETITORS.
+        </div>
+
+        <div class="barcode" id="bc-03"></div>
+        <div class="barcode-num">8 31200 03784 3 &nbsp;·&nbsp; SILENCIO-03-DS</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PRODUCT 04 · SACHET ── -->
+  <div class="product-card" id="card-04">
+    <div class="product-stage silver">
+      <canvas id="canvas-04"></canvas>
+    </div>
+    <div class="product-info">
+      <div>
+        <p class="product-number">PRODUCT — #04 / 04</p>
+        <h3 class="product-name">INSTANT<br/>CULTURE™</h3>
+        <span class="product-edition">LIMITED EDITION — 004/500</span>
+        <p class="product-tagline">
+          Single-serve cultural relevance. Just add budget.
+          Results guaranteed for up to 10 years.
+        </p>
+      </div>
+
+      <div>
+        <div class="nutrition-panel">
+          <h4>Creative Facts</h4>
+          <p style="font-size:.5rem;margin-bottom:.3rem">Serving size: 1 sachet / 1 decade</p>
+          <h5>Amount Per Brief</h5>
+          <div class="nutrition-row bold"><span>Total Culture</span><span>100%</span></div>
+          <div class="nutrition-row sub"><span>Zeitgeist</span><span>Very High</span></div>
+          <div class="nutrition-row sub"><span>Longevity</span><span>10yr</span></div>
+          <div class="nutrition-row bold"><span>Relevance</span><span>Earned</span></div>
+          <div class="nutrition-row"><span>Trend Chasing</span><span>0g</span></div>
+          <div class="nutrition-row"><span>Cheap Irony</span><span>0g</span></div>
+          <div class="nutrition-row bold"><span>Authenticity</span><span>∞</span></div>
+        </div>
+
+        <div class="ingredients">
+          INGREDIENTS: CULTURAL CONTEXT (COMPRESSED), SILVER MYLAR LAMINATE, HEAT-SEALED INTENTION, SINGLE-ORIGIN CONCEPT, FREEZE-DRIED REFERENCES, INSTITUTIONAL CRITIQUE (POWDERED), RECLAIMED SEMIOTICS, ANTI-VIRAL MEME RESISTANCE. BEST BEFORE: NEVER. STORE IN: A BRAVE PLACE.
+        </div>
+
+        <div class="barcode" id="bc-04"></div>
+        <div class="barcode-num">8 31200 03784 4 &nbsp;·&nbsp; SILENCIO-04-IC</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  TICKER                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="ticker-wrap">
+  <div class="ticker-track" id="ticker">
+    <span>NO RETURN POLICY</span><span class="dot">★</span>
+    <span>HARD WORK WARRANTY</span><span class="dot">★</span>
+    <span>CONSUME RESPONSIBLY</span><span class="dot">★</span>
+    <span>AUTHENTIC SINCE 2023</span><span class="dot">★</span>
+    <span>DARING BRANDS ONLY</span><span class="dot">★</span>
+    <span>DIGITAL IS PHYSICAL</span><span class="dot">★</span>
+    <span>SILENCE IS GOLDEN</span><span class="dot">★</span>
+    <!-- duplicate for seamless loop -->
+    <span>NO RETURN POLICY</span><span class="dot">★</span>
+    <span>HARD WORK WARRANTY</span><span class="dot">★</span>
+    <span>CONSUME RESPONSIBLY</span><span class="dot">★</span>
+    <span>AUTHENTIC SINCE 2023</span><span class="dot">★</span>
+    <span>DARING BRANDS ONLY</span><span class="dot">★</span>
+    <span>DIGITAL IS PHYSICAL</span><span class="dot">★</span>
+    <span>SILENCE IS GOLDEN</span><span class="dot">★</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 4 · DARK / MOODY                                      -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="dark-section">
+  <p style="font-family:'Space Mono',monospace;font-size:.65rem;letter-spacing:.3em;color:#555;margin-bottom:3rem;text-transform:uppercase">
+    Manifesto — 03
+  </p>
+  <h2 class="dark-headline reveal">
+    DARING<br/>
+    BRANDS<br/>
+    <span class="stroke">WILLING</span><br/>
+    TO RISK<br/>
+    <span class="stroke">EVERYTHING.</span>
+  </h2>
+
+  <div class="grid-moody">
+    <div class="moody-cell">
+      <div class="moody-cell-inner">VISION</div>
+      <span class="moody-label">01 — PERSPECTIVE</span>
+    </div>
+    <div class="moody-cell" style="background:#111">
+      <div class="moody-cell-inner" style="color:#1f1f1f">CRAFT</div>
+      <span class="moody-label">02 — EXECUTION</span>
+    </div>
+    <div class="moody-cell" style="background:#0d0d0d">
+      <div class="moody-cell-inner" style="color:#181818">GUTS</div>
+      <span class="moody-label">03 — COURAGE</span>
+    </div>
+    <div class="moody-cell" style="background:#161616;grid-column:span 2">
+      <div class="moody-cell-inner" style="color:#1d1d1d;font-size:clamp(3rem,7vw,6rem)">OUTSIDE THE NORM</div>
+      <span class="moody-label">04 — PHILOSOPHY</span>
+    </div>
+    <div class="moody-cell" style="background:#0a0a0a">
+      <div class="moody-cell-inner" style="color:#111">SOUL</div>
+      <span class="moody-label">05 — IDENTITY</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SECTION 5 · CTA                                               -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="cta">
+  <canvas id="basket-canvas"></canvas>
+
+  <h2 class="cta-thanks reveal">THANKS<br/>FOR YOUR<br/>VISIT!</h2>
+  <p class="cta-sub reveal">LET'S TALK.</p>
+
+  <a href="mailto:hello@silencio.studio" class="cta-btn reveal">START A PROJECT</a>
+  <p class="cta-email">hello@silencio.studio</p>
+
+  <div style="position:absolute;bottom:3rem;left:2.5rem;z-index:2;font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:.18em;color:#bbb">
+    STUDIO SILENCIO / AVAILABLE WORLDWIDE
+  </div>
+  <div style="position:absolute;bottom:3rem;right:2.5rem;z-index:2;font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:.18em;color:#bbb;text-align:right">
+    CART: 4 ITEMS / CHECKOUT
+  </div>
+</section>
+
+<!-- ─── FOOTER ──────────────────────────────────────────────────── -->
+<footer>
+  <span>© SILENCIO STUDIO MMXXIII</span>
+  <span>DIGITAL PRODUCTS · ALL RIGHTS RESERVED · NO RETURN POLICY</span>
+  <span>CONSUME RESPONSIBLY</span>
+</footer>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  JAVASCRIPT                                                     -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   GSAP SETUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CURSOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const cursor = document.getElementById('cursor');
+let mx = 0, my = 0;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  gsap.to(cursor, { x: mx, y: my, duration: .15, ease: 'power2.out' });
+});
+document.querySelectorAll('a, button, .product-card, .cta-btn').forEach(el => {
+  el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+  el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+});
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PAGE ENTRY ANIMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+gsap.set('#page-cover', { scaleY: 1 });
+gsap.to('#page-cover', { scaleY: 0, duration: 1.2, ease: 'expo.inOut', delay: .2 });
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCROLL REVEAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+gsap.utils.toArray('.reveal').forEach(el => {
+  gsap.fromTo(el,
+    { opacity: 0, y: 50 },
+    { opacity: 1, y: 0, duration: 1, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
+    }
+  );
+});
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   GENERATE BARCODES (CSS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function generateBarcode(containerId, seed) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const widths = [1,2,1,1,2,1,3,1,2,1,1,2,3,1,1,2,1,1,2,1,3,2,1,1,2,1,1];
+  const heights= [100,80,100,60,90,100,70,100,80,100,90,60,100,80,70,100,60,90,100,80,100,70,90,100,80,60,100];
+  widths.forEach((w, i) => {
+    if (i % 2 === 0) {
+      const bar = document.createElement('div');
+      bar.className = 'barcode-bar';
+      bar.style.width = (w * ((seed % 3) + 1) + 1) + 'px';
+      bar.style.height = heights[(i + seed) % heights.length] + '%';
+      container.appendChild(bar);
+    }
+  });
+}
+generateBarcode('bc-01', 1);
+generateBarcode('bc-02', 3);
+generateBarcode('bc-03', 5);
+generateBarcode('bc-04', 7);
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   THREE.JS HELPER — MAKE RENDERER + SCENE + CAMERA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function makeScene(canvasId, bgColor, alpha) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: !!alpha });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  if (!alpha) renderer.setClearColor(bgColor || 0xf5f4f0);
+
+  const scene = new THREE.Scene();
+  if (!alpha && bgColor) scene.background = new THREE.Color(bgColor);
+
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.set(0, 0, 5);
+
+  function resize() {
+    const w = canvas.parentElement.clientWidth;
+    const h = canvas.parentElement.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  return { renderer, scene, camera, canvas };
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LIGHTING HELPERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function addLights(scene, preset) {
+  const amb = new THREE.AmbientLight(0xffffff, preset === 'dark' ? 0.3 : 0.6);
+  scene.add(amb);
+
+  const key = new THREE.DirectionalLight(0xffffff, preset === 'dark' ? 2.5 : 1.8);
+  key.position.set(3, 5, 4);
+  key.castShadow = true;
+  scene.add(key);
+
+  const fill = new THREE.DirectionalLight(preset === 'dark' ? 0x8888ff : 0xfff0e0, preset === 'dark' ? 1.2 : 0.6);
+  fill.position.set(-4, -2, 3);
+  scene.add(fill);
+
+  if (preset === 'dark') {
+    const rim = new THREE.DirectionalLight(0xffffff, 1.5);
+    rim.position.set(0, -3, -3);
+    scene.add(rim);
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   HERO SCENE — Multiple floating products
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+(function() {
+  const ctx = makeScene('hero-canvas', null, true);
+  if (!ctx) return;
+  const { renderer, scene, camera } = ctx;
+
+  addLights(scene, 'light');
+
+  const products = [];
+
+  /* can */
+  function makeCan(color1, color2) {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(.38, .38, 1.1, 32),
+      new THREE.MeshStandardMaterial({ color: color1, metalness: .7, roughness: .2 })
+    );
+    const topCap = new THREE.Mesh(
+      new THREE.CylinderGeometry(.35, .38, .08, 32),
+      new THREE.MeshStandardMaterial({ color: color2, metalness: .9, roughness: .15 })
+    );
+    topCap.position.y = .59;
+    const botCap = topCap.clone(); botCap.position.y = -.59;
+    g.add(body, topCap, botCap);
+    return g;
+  }
+
+  /* pouch */
+  function makePouch(color) {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(.7, 1.1, .18, 4, 8, 2),
+      new THREE.MeshStandardMaterial({ color, metalness: .3, roughness: .5 })
+    );
+    // pinch top & bottom
+    const geo = body.geometry;
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      const factor = Math.abs(y) > .45 ? 1 - (Math.abs(y) - .45) * 1.8 : 1;
+      pos.setX(i, pos.getX(i) * Math.max(.1, factor));
+    }
+    geo.computeVertexNormals();
+    g.add(body);
+    return g;
+  }
+
+  /* tube */
+  function makeTube(color) {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(.22, .25, 1.05, 24),
+      new THREE.MeshStandardMaterial({ color, metalness: .85, roughness: .1 })
+    );
+    const cap = new THREE.Mesh(
+      new THREE.CylinderGeometry(.1, .22, .18, 24),
+      new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: .9, roughness: .1 })
+    );
+    cap.position.y = .6;
+    const nozzle = new THREE.Mesh(
+      new THREE.CylinderGeometry(.05, .1, .12, 16),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: .95, roughness: .05 })
+    );
+    nozzle.position.y = .74;
+    g.add(body, cap, nozzle);
+    return g;
+  }
+
+  /* sachet */
+  function makeSachet(color) {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(.8, .55, .06),
+      new THREE.MeshStandardMaterial({ color, metalness: .8, roughness: .15 })
+    );
+    // seal lines
+    for (let i = 0; i < 3; i++) {
+      const seal = new THREE.Mesh(
+        new THREE.BoxGeometry(.78, .03, .07),
+        new THREE.MeshStandardMaterial({ color: 0x999999, metalness: .9, roughness: .1 })
+      );
+      seal.position.y = -.22 + i * .22;
+      g.add(seal);
+    }
+    g.add(body);
+    return g;
+  }
+
+  const items = [
+    { obj: makeCan(0x333333, 0x222222), pos: [-1.6, .5, 0], rot: [.3, .5, .1] },
+    { obj: makePouch(0xe8b4c8),         pos: [-.5, -.3, .5], rot: [-.2, -.4, .15] },
+    { obj: makeTube(0xb0b0b0),          pos: [.8, .4, -.2], rot: [.4, .6, -.2] },
+    { obj: makeSachet(0xc8c8c8),        pos: [1.7, -.4, .3], rot: [.1, -.3, .3] },
+    { obj: makeCan(0x1a1a2e, 0x16213e), pos: [0, .8, -.8], rot: [-.3, .8, .2] },
+  ];
+
+  items.forEach(({ obj, pos, rot }) => {
+    obj.position.set(...pos);
+    obj.rotation.set(...rot);
+    scene.add(obj);
+    products.push(obj);
+  });
+
+  /* float animation */
+  let t = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    t += .008;
+    products.forEach((p, i) => {
+      p.rotation.y += .006 + i * .002;
+      p.position.y += Math.sin(t + i * 1.3) * .001;
+    });
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  /* parallax on scroll */
+  ScrollTrigger.create({
+    trigger: '#hero', start: 'top top', end: 'bottom top',
+    onUpdate: self => {
+      const p = self.progress;
+      products.forEach((prod, i) => {
+        prod.position.y += (Math.sin(i * 2) * .5 * p - prod.position.y * .01);
+      });
+      camera.position.z = 5 + p * 2;
+    }
+  });
+})();
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PRODUCT 01 — BEVERAGE CAN (white/chrome on dark)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+(function() {
+  const ctx = makeScene('canvas-01', 0x111111);
+  if (!ctx) return;
+  const { renderer, scene, camera } = ctx;
+  addLights(scene, 'dark');
+
+  const can = new THREE.Group();
+
+  /* main cylinder */
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0xf0f0f0, metalness: .9, roughness: .08,
+    envMapIntensity: 1.5
+  });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, 1.6, 48), bodyMat);
+  can.add(body);
+
+  /* label band */
+  const labelMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: .3, roughness: .6 });
+  const label = new THREE.Mesh(new THREE.CylinderGeometry(.505, .505, 1.0, 48, 1, true), labelMat);
+  can.add(label);
+
+  /* label text via canvas texture */
+  const ltx = document.createElement('canvas');
+  ltx.width = 512; ltx.height = 256;
+  const lc = ltx.getContext('2d');
+  lc.fillStyle = '#ffffff';
+  lc.fillRect(0, 0, 512, 256);
+  lc.fillStyle = '#111';
+  lc.font = 'bold 72px Arial Narrow, Arial';
+  lc.letterSpacing = '8px';
+  lc.textAlign = 'center';
+  lc.fillText('VISION', 256, 100);
+  lc.fillText('CRAFT™', 256, 175);
+  lc.font = '16px monospace';
+  lc.fillStyle = '#888';
+  lc.fillText('DIGITAL CONCENTRATE · 355ml · #01/500', 256, 220);
+  const labelTex = new THREE.CanvasTexture(ltx);
+  label.material.map = labelTex;
+  label.material.needsUpdate = true;
+
+  /* top/bottom caps */
+  const capMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: .95, roughness: .05 });
+  [.84, -.84].forEach(y => {
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(.48, .5, .08, 48), capMat);
+    cap.position.y = y;
+    can.add(cap);
+  });
+
+  /* pull tab */
+  const tab = new THREE.Mesh(
+    new THREE.TorusGeometry(.08, .015, 8, 16, Math.PI),
+    new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: .95, roughness: .05 })
+  );
+  tab.position.set(.2, .9, 0); tab.rotation.x = -Math.PI / 4;
+  can.add(tab);
+
+  scene.add(can);
+  can.rotation.x = .15;
+  can.scale.setScalar(1.25);
+
+  /* scroll-driven rotation */
+  ScrollTrigger.create({
+    trigger: '#card-01', start: 'top bottom', end: 'bottom top',
+    onUpdate: self => { can.rotation.y = self.progress * Math.PI * 2; }
+  });
+
+  let t = 0;
+  (function loop() {
+    requestAnimationFrame(loop);
+    t += .01;
+    can.position.y = Math.sin(t) * .08;
+    renderer.render(scene, camera);
+  })();
+})();
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PRODUCT 02 — GRADIENT POUCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+(function() {
+  const ctx = makeScene('canvas-02', 0xf7e8f0);
+  if (!ctx) return;
+  const { renderer, scene, camera } = ctx;
+  addLights(scene, 'light');
+
+  /* build pouch with canvas texture */
+  const tx = document.createElement('canvas');
+  tx.width = 512; tx.height = 768;
+  const tc = tx.getContext('2d');
+
+  const grad = tc.createLinearGradient(0, 0, 512, 768);
+  grad.addColorStop(0, '#e8b4c8');
+  grad.addColorStop(.5, '#f4c6d4');
+  grad.addColorStop(1, '#c890b0');
+  tc.fillStyle = grad;
+  tc.fillRect(0, 0, 512, 768);
+
+  /* seal lines */
+  tc.fillStyle = '#d4a0b8';
+  [30, 738].forEach(y => tc.fillRect(0, y, 512, 16));
+
+  /* text */
+  tc.fillStyle = '#2a1020';
+  tc.font = 'bold 80px Arial Narrow, Arial';
+  tc.textAlign = 'center';
+  tc.fillText('TENDER', 256, 220);
+  tc.fillText('BRUTAL™', 256, 310);
+  tc.font = '18px monospace';
+  tc.fillStyle = '#8a4060';
+  tc.fillText('#02 / 500  ·  LIMITED EDITION', 256, 370);
+  tc.fillText('DIGITAL CONCENTRATE · PINK VARIANT', 256, 400);
+
+  /* stripes */
+  tc.strokeStyle = '#d4a0b8'; tc.lineWidth = 1;
+  for (let i = 430; i < 650; i += 12) {
+    tc.beginPath(); tc.moveTo(50, i); tc.lineTo(462, i); tc.stroke();
+  }
+
+  const pouchTex = new THREE.CanvasTexture(tx);
+  const pouch = new THREE.Group();
+
+  /* create a slightly deformed box for the pouch body */
+  const geo = new THREE.BoxGeometry(.85, 1.5, .22, 4, 12, 2);
+  const posAttr = geo.attributes.position;
+  for (let i = 0; i < posAttr.count; i++) {
+    const y = posAttr.getY(i);
+    const norm = y / .75; // -1 to 1
+    const pinch = Math.abs(norm) > .8 ? 1 - (Math.abs(norm) - .8) * 3 : 1;
+    posAttr.setX(i, posAttr.getX(i) * Math.max(.05, pinch));
+    posAttr.setZ(i, posAttr.getZ(i) * Math.max(.1, pinch));
+  }
+  geo.computeVertexNormals();
+
+  const mat = new THREE.MeshStandardMaterial({
+    map: pouchTex, metalness: .2, roughness: .55
+  });
+  const body = new THREE.Mesh(geo, mat);
+  pouch.add(body);
+
+  /* notch at top */
+  const notch = new THREE.Mesh(
+    new THREE.CylinderGeometry(.04, .04, .04, 12),
+    new THREE.MeshStandardMaterial({ color: 0x2a1020, metalness: .3, roughness: .6 })
+  );
+  notch.position.set(.3, .78, 0); notch.rotation.z = Math.PI / 2;
+  pouch.add(notch);
+
+  scene.add(pouch);
+  pouch.scale.setScalar(1.3);
+
+  ScrollTrigger.create({
+    trigger: '#card-02', start: 'top bottom', end: 'bottom top',
+    onUpdate: self => { pouch.rotation.y = (self.progress - .5) * 1.2; }
+  });
+
+  let t = 0;
+  (function loop() {
+    requestAnimationFrame(loop);
+    t += .008;
+    pouch.position.y = Math.sin(t * 1.1) * .1;
+    pouch.rotation.z = Math.sin(t * .7) * .04;
+    renderer.render(scene, camera);
+  })();
+})();
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PRODUCT 03 — METALLIC TUBE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+(function() {
+  const ctx = makeScene('canvas-03', 0x0d0d0d);
+  if (!ctx) return;
+  const { renderer, scene, camera } = ctx;
+  addLights(scene, 'dark');
+
+  const tube = new THREE.Group();
+
+  /* label texture */
+  const tx = document.createElement('canvas');
+  tx.width = 512; tx.height = 256;
+  const tc = tx.getContext('2d');
+  const mg = tc.createLinearGradient(0, 0, 512, 0);
+  mg.addColorStop(0, '#a0a0a0');
+  mg.addColorStop(.3, '#e0e0e0');
+  mg.addColorStop(.6, '#c0c0c0');
+  mg.addColorStop(1, '#888888');
+  tc.fillStyle = mg;
+  tc.fillRect(0, 0, 512, 256);
+  tc.fillStyle = '#111';
+  tc.font = 'bold 68px Arial Narrow, Arial';
+  tc.textAlign = 'center';
+  tc.letterSpacing = '6px';
+  tc.fillText('DENSE', 256, 100);
+  tc.fillText('SIGNAL™', 256, 178);
+  tc.font = '15px monospace';
+  tc.fillStyle = '#444';
+  tc.fillText('#03/500 · METALLIC VARIANT · 50ml', 256, 224);
+
+  const tubeTex = new THREE.CanvasTexture(tx);
+
+  /* body */
+  const bodyMat = new THREE.MeshStandardMaterial({
+    map: tubeTex, metalness: .92, roughness: .07
+  });
+  const bodyGeo = new THREE.CylinderGeometry(.3, .32, 1.5, 32);
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  tube.add(body);
+
+  /* crimped bottom (flat squish) */
+  const crimp = new THREE.Mesh(
+    new THREE.BoxGeometry(.62, .06, .1),
+    new THREE.MeshStandardMaterial({ color: 0x888888, metalness: .9, roughness: .1 })
+  );
+  crimp.position.y = -.78;
+  tube.add(crimp);
+
+  /* shoulder taper */
+  const shoulder = new THREE.Mesh(
+    new THREE.CylinderGeometry(.14, .3, .3, 32),
+    new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: .95, roughness: .05 })
+  );
+  shoulder.position.y = .9;
+  tube.add(shoulder);
+
+  /* cap */
+  const cap = new THREE.Mesh(
+    new THREE.CylinderGeometry(.09, .14, .22, 24),
+    new THREE.MeshStandardMaterial({ color: 0x222222, metalness: .7, roughness: .3 })
+  );
+  cap.position.y = 1.1;
+  tube.add(cap);
+
+  scene.add(tube);
+  tube.scale.setScalar(1.2);
+  tube.rotation.x = -.2;
+
+  ScrollTrigger.create({
+    trigger: '#card-03', start: 'top bottom', end: 'bottom top',
+    onUpdate: self => { tube.rotation.y = self.progress * Math.PI * 1.5; }
+  });
+
+  let t = 0;
+  (function loop() {
+    requestAnimationFrame(loop);
+    t += .009;
+    tube.position.y = Math.sin(t * .9) * .09;
+    renderer.render(scene, camera);
+  })();
+})();
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PRODUCT 04 — SILVER SACHET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+(function() {
+  const ctx = makeScene('canvas-04', 0xe8e8e8);
+  if (!ctx) return;
+  const { renderer, scene, camera } = ctx;
+  addLights(scene, 'light');
+
+  const sachet = new THREE.Group();
+
+  const tx = document.createElement('canvas');
+  tx.width = 512; tx.height = 512;
+  const tc = tx.getContext('2d');
+  const sg = tc.createLinearGradient(0, 0, 512, 512);
+  sg.addColorStop(0, '#d0d0d0');
+  sg.addColorStop(.4, '#f0f0f0');
+  sg.addColorStop(.7, '#b8b8b8');
+  sg.addColorStop(1, '#e4e4e4');
+  tc.fillStyle = sg;
+  tc.fillRect(0, 0, 512, 512);
+
+  /* horizontal seal lines */
+  [30, 80, 432, 482].forEach(y => {
+    tc.fillStyle = '#aaaaaa'; tc.fillRect(0, y, 512, 16);
+  });
+
+  tc.fillStyle = '#111';
+  tc.font = 'bold 72px Arial Narrow, Arial';
+  tc.textAlign = 'center';
+  tc.fillText('INSTANT', 256, 200);
+  tc.fillText('CULTURE™', 256, 285);
+  tc.font = '16px monospace';
+  tc.fillStyle = '#666';
+  tc.fillText('#04/500 · SINGLE SERVE · SILVER', 256, 340);
+  tc.fillText('DIGITAL CONCENTRATE 10g', 256, 368);
+
+  /* notch indicators */
+  [80, 440].forEach(x => {
+    tc.strokeStyle = '#999'; tc.lineWidth = 2;
+    tc.beginPath(); tc.moveTo(x, 68); tc.lineTo(x + 24, 68); tc.stroke();
+    tc.beginPath(); tc.moveTo(x, 444); tc.lineTo(x + 24, 444); tc.stroke();
+  });
+
+  const sachTex = new THREE.CanvasTexture(tx);
+
+  /* front face */
+  const frontMat = new THREE.MeshStandardMaterial({ map: sachTex, metalness: .75, roughness: .15 });
+  const backMat  = new THREE.MeshStandardMaterial({ color: 0xb0b0b0, metalness: .85, roughness: .1 });
+
+  /* slightly puffy box */
+  const geo = new THREE.BoxGeometry(1.4, 1.4, .12, 8, 8, 2);
+  const posA = geo.attributes.position;
+  for (let i = 0; i < posA.count; i++) {
+    const x = posA.getX(i) / .7;
+    const y = posA.getY(i) / .7;
+    const z = posA.getZ(i);
+    if (Math.abs(z) > .04) {
+      const puff = (1 - x*x) * (1 - y*y) * .06;
+      posA.setZ(i, z + (z > 0 ? puff : -puff));
+    }
+  }
+  geo.computeVertexNormals();
+
+  const body = new THREE.Mesh(geo, [backMat, backMat, backMat, backMat, frontMat, backMat]);
+  sachet.add(body);
+
+  scene.add(sachet);
+  sachet.scale.setScalar(1.15);
+
+  ScrollTrigger.create({
+    trigger: '#card-04', start: 'top bottom', end: 'bottom top',
+    onUpdate: self => { sachet.rotation.y = (self.progress - .5) * Math.PI; }
+  });
+
+  let t = 0;
+  (function loop() {
+    requestAnimationFrame(loop);
+    t += .008;
+    sachet.position.y = Math.sin(t * 1.2) * .08;
+    sachet.rotation.z = Math.sin(t * .6) * .05;
+    renderer.render(scene, camera);
+  })();
+})();
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BASKET / CTA SCENE — all products orbiting
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+(function() {
+  const ctx = makeScene('basket-canvas', null, true);
+  if (!ctx) return;
+  const { renderer, scene, camera } = ctx;
+  addLights(scene, 'light');
+  camera.position.z = 7;
+
+  function miniCan(c) {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.7,24),
+      new THREE.MeshStandardMaterial({color:c,metalness:.8,roughness:.15})));
+    return g;
+  }
+  function miniPouch() {
+    return new THREE.Mesh(new THREE.BoxGeometry(.45,.7,.12),
+      new THREE.MeshStandardMaterial({color:0xe8b4c8,metalness:.2,roughness:.5}));
+  }
+  function miniTube() {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(.15,.18,.85,20),
+      new THREE.MeshStandardMaterial({color:0xc0c0c0,metalness:.9,roughness:.08})));
+    return g;
+  }
+  function miniSachet() {
+    return new THREE.Mesh(new THREE.BoxGeometry(.7,.7,.06),
+      new THREE.MeshStandardMaterial({color:0xd0d0d0,metalness:.75,roughness:.18}));
+  }
+
+  const orbit = [
+    { obj: miniCan(0x222222), r: 2.2, speed: .4,  phase: 0 },
+    { obj: miniPouch(),        r: 2.6, speed: .35, phase: Math.PI * .5 },
+    { obj: miniTube(),         r: 2.0, speed: .45, phase: Math.PI },
+    { obj: miniSachet(),       r: 2.8, speed: .38, phase: Math.PI * 1.5 },
+  ];
+
+  orbit.forEach(({ obj }) => scene.add(obj));
+
+  let t = 0;
+  (function loop() {
+    requestAnimationFrame(loop);
+    t += .01;
+    orbit.forEach(({ obj, r, speed, phase }) => {
+      const a = t * speed + phase;
+      obj.position.set(Math.cos(a) * r, Math.sin(a * .6) * .8, Math.sin(a) * r * .4);
+      obj.rotation.y += .02;
+    });
+    renderer.render(scene, camera);
+  })();
+})();
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NAV SMOOTH SCROLL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+document.querySelectorAll('nav a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) gsap.to(window, { scrollTo: target, duration: 1.2, ease: 'power3.inOut' });
+  });
+});
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MOODY GRID REVEAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+gsap.utils.toArray('.moody-cell').forEach((cell, i) => {
+  gsap.fromTo(cell,
+    { opacity: 0, scale: .9 },
+    { opacity: 1, scale: 1, duration: .8, ease: 'power2.out', delay: i * .1,
+      scrollTrigger: { trigger: cell, start: 'top 90%' }
+    }
+  );
+});
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NAV COLOR SHIFT (light/dark sections)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+['#intro','#dark-section'].forEach(sel => {
+  ScrollTrigger.create({
+    trigger: sel, start: 'top top', end: 'bottom top',
+    onEnter: ()  => document.querySelector('nav').style.mixBlendMode = 'difference',
+    onLeave: ()  => document.querySelector('nav').style.mixBlendMode = 'difference',
+  });
+});
+
+console.log('%cSILENCIO STUDIO — DIGITAL PRODUCTS', 'font-size:24px;font-weight:900;letter-spacing:.3em;color:#ff3c00');
+console.log('%cConsuming this page responsibly since 2023.', 'font-size:12px;color:#888;letter-spacing:.1em');
+</script>
+</body>
+</html>
